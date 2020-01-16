@@ -34,7 +34,7 @@ namespace FileStoreDemo.WebSite
             var now = DateTime.Now;
             fileName = Path.GetFileName(postFile.FileName);
             objectName = string.Format("{0}/{1}/{2}", now.Year.ToString(), now.Month.ToString(), fileName);
-            
+
             FileStoreHelper.Instance.Upload(objectName, postFile.InputStream);
             this.lblMsg.Text = "上传成功！";
         }
@@ -44,12 +44,16 @@ namespace FileStoreDemo.WebSite
             //下载
             //以字符流的形式下载文件 
             byte[] bytes = null;
-            using (var ms = FileStoreHelper.Instance.Download(objectName))
+            using (var downloadStream = FileStoreHelper.Instance.Download(objectName))
             {
-                bytes = ms.ToArray();
+                using (var ms = new MemoryStream())
+                {
+                    downloadStream.CopyTo(ms);
+                    bytes = ms.ToArray();
+                }
             }
-            
-            Response.ContentType = "application/octet-stream";   
+
+            Response.ContentType = "application/octet-stream";
             Response.AddHeader("Content-Disposition", "attachment; filename=" + HttpUtility.UrlEncode(fileName, System.Text.Encoding.UTF8));
             Response.BinaryWrite(bytes);
             Response.Flush();
