@@ -13,6 +13,7 @@ namespace FileStoreDemo.WebSite
 {
     public partial class Home : System.Web.UI.Page
     {
+        private static string localFileName = string.Empty;
         private static string objectName = string.Empty;
         private static string fileName = string.Empty;
 
@@ -33,9 +34,27 @@ namespace FileStoreDemo.WebSite
 
             var now = DateTime.Now;
             fileName = Path.GetFileName(postFile.FileName);
-            objectName = string.Format("{0}/{1}/{2}", now.Year.ToString(), now.Month.ToString(), fileName);
 
-            FileStoreHelper.Instance.Upload(objectName, postFile.InputStream);
+            #region 1-本地
+
+            //创建目录
+            //保存文件
+            var localDir = string.Format("{0}\\{1}\\{2}\\", "D:\\UploadFiles", now.Year.ToString(), now.Month.ToString());
+            if (!Directory.Exists(localDir))
+            {
+                Directory.CreateDirectory(localDir);
+            }
+
+            localFileName = localDir + fileName;
+            postFile.SaveAs(localFileName);
+
+            #endregion
+
+            #region 2-阿里云OSS
+            //objectName = string.Format("{0}/{1}/{2}", now.Year.ToString(), now.Month.ToString(), fileName);
+            //FileStoreHelper.Instance.Upload(objectName, postFile.InputStream); 
+            #endregion
+
             this.lblMsg.Text = "上传成功！";
         }
 
@@ -44,14 +63,24 @@ namespace FileStoreDemo.WebSite
             //下载
             //以字符流的形式下载文件 
             byte[] bytes = null;
-            using (var downloadStream = FileStoreHelper.Instance.Download(objectName))
-            {
-                using (var ms = new MemoryStream())
-                {
-                    downloadStream.CopyTo(ms);
-                    bytes = ms.ToArray();
-                }
-            }
+
+            #region 1-from本地
+
+            //从文件中读取
+            bytes= File.ReadAllBytes(localFileName);
+
+            #endregion
+
+            #region 2-from阿里云OSS
+            //using (var downloadStream = FileStoreHelper.Instance.Download(objectName))
+            //{
+            //    using (var ms = new MemoryStream())
+            //    {
+            //        downloadStream.CopyTo(ms);
+            //        bytes = ms.ToArray();
+            //    }
+            //} 
+            #endregion
 
             Response.ContentType = "application/octet-stream";
             Response.AddHeader("Content-Disposition", "attachment; filename=" + HttpUtility.UrlEncode(fileName, System.Text.Encoding.UTF8));
